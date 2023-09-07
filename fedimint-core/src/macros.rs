@@ -288,10 +288,10 @@ macro_rules! module_plugin_dyn_newtype_clone_passhthrough {
 macro_rules! module_plugin_dyn_newtype_encode_decode {
     ($name:ident) => {
         impl Encodable for $name {
-            fn consensus_encode<W: std::io::Write>(
+            fn consensus_encode<W: lightning::io::Write>(
                 &self,
                 writer: &mut W,
-            ) -> Result<usize, std::io::Error> {
+            ) -> Result<usize, lightning::io::Error> {
                 let mut written = self.module_instance_id.consensus_encode(writer)?;
 
                 let mut buf = Vec::with_capacity(512);
@@ -305,7 +305,7 @@ macro_rules! module_plugin_dyn_newtype_encode_decode {
         }
 
         impl Decodable for $name {
-            fn consensus_decode<R: std::io::Read>(
+            fn consensus_decode<R: lightning::io::Read>(
                 reader: &mut R,
                 modules: &$crate::module::registry::ModuleDecoderRegistry,
             ) -> Result<Self, fedimint_core::encoding::DecodeError> {

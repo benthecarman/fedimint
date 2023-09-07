@@ -31,7 +31,7 @@ use fedimint_testing::fixtures::Fixtures;
 use fedimint_testing::gateway::{GatewayTest, LightningNodeType};
 use fedimint_testing::ln::LightningTest;
 use futures::Future;
-use lightning_invoice::Invoice;
+use lightning_invoice::Bolt11Invoice;
 use ln_gateway::gateway_lnrpc::GetNodeInfoResponse;
 use ln_gateway::ng::{
     GatewayClientExt, GatewayClientModule, GatewayClientStateMachines, GatewayExtPayStates,

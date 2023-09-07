@@ -22,13 +22,13 @@ async-trait = "0.1"
 async-stream = "0.3.5"
 aquamarine = "0.3.0"
 bincode = "1"
-bitcoin = "0.29.2"
+bitcoin = { version = "0.29.2", default-features = false, features = [ "rand", "serde" ] }
 bitcoin_hashes = "0.11.0"
 erased-serde = "0.3"
 futures = "0.3.24"
 itertools = "0.10.5"
-lightning = "0.0.113"
-lightning-invoice = { version = "0.21.0", features = [ "serde" ] }
+lightning = {version = "0.0.116", default-features = false }
+lightning-invoice = { version = "0.24.0", default-features = false, features = [ "serde" ] }
 fedimint-client = { path = "../../fedimint-client" }
 fedimint-core ={ path = "../../fedimint-core" }
 fedimint-ln-common ={ path = "../fedimint-ln-common" }

@@ -9,7 +9,6 @@ use std::any::{Any, TypeId};
 use std::borrow::Cow;
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Display, Formatter};
-use std::io::Read;
 use std::sync::Arc;
 
 use anyhow::anyhow;
@@ -17,6 +16,7 @@ pub use bitcoin::KeyPair;
 use fedimint_core::dyn_newtype_define;
 use fedimint_core::encoding::{Decodable, DecodeError, DynEncodable, Encodable};
 use fedimint_core::module::registry::ModuleDecoderRegistry;
+use lightning::io::Read;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,7 +25,6 @@ use crate::{
     module_plugin_dyn_newtype_encode_decode, module_plugin_dyn_newtype_eq_passthrough,
     module_plugin_static_trait_define,
 };
-
 pub mod client;
 pub mod server;
 

@@ -17,7 +17,7 @@ use fedimint_core::task::timeout;
 use fedimint_core::Amount;
 use futures::StreamExt;
 use lightning::routing::gossip::RoutingFees;
-use lightning_invoice::Invoice;
+use lightning_invoice::Bolt11Invoice;
 use rand::{CryptoRng, RngCore};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;

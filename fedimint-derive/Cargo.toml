@@ -15,6 +15,7 @@ path = "src/lib.rs"
 diagnostics = []
 
 [dependencies]
+lightning = { version = "0.0.116", default-features = false, features = ["no-std"] }
 heck = "0.4"
 proc-macro2 = "1.0"
 quote = "1.0"

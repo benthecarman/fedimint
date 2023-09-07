@@ -1,8 +1,8 @@
-use std::io::{Error, Write};
 use std::str::FromStr;
 
 use anyhow::format_err;
 use bitcoin::hashes::Hash as BitcoinHash;
+use lightning::io::{Error, Write};
 use miniscript::{Descriptor, MiniscriptKey};
 
 use crate::encoding::{Decodable, DecodeError, Encodable};
@@ -11,21 +11,21 @@ use crate::module::registry::ModuleDecoderRegistry;
 macro_rules! impl_encode_decode_bridge {
     ($btc_type:ty) => {
         impl crate::encoding::Encodable for $btc_type {
-            fn consensus_encode<W: std::io::Write>(
+            fn consensus_encode<W: lightning::io::Write>(
                 &self,
                 writer: &mut W,
-            ) -> Result<usize, std::io::Error> {
+            ) -> Result<usize, lightning::io::Error> {
                 bitcoin::consensus::Encodable::consensus_encode(self, writer)
             }
         }
 
         impl crate::encoding::Decodable for $btc_type {
-            fn consensus_decode<D: std::io::Read>(
+            fn consensus_decode<D: lightning::io::Read>(
                 d: &mut D,
                 _modules: &$crate::module::registry::ModuleDecoderRegistry,
             ) -> Result<Self, crate::encoding::DecodeError> {
-                bitcoin::consensus::Decodable::consensus_decode(d)
-                    .map_err(crate::encoding::DecodeError::from_err)
+                Ok(bitcoin::consensus::Decodable::consensus_decode(d).unwrap())
+                // .map_err(crate::encoding::DecodeError::from_err)
             }
         }
     };
@@ -56,7 +56,7 @@ where
     <Self as FromStr>::Err: ToString + std::error::Error + Send + Sync + 'static,
     K: MiniscriptKey,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -72,7 +72,7 @@ impl Encodable for bitcoin::Network {
 }
 
 impl Decodable for bitcoin::Network {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -84,13 +84,16 @@ impl Decodable for bitcoin::Network {
 }
 
 impl Encodable for bitcoin::Amount {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.to_sat().consensus_encode(writer)
     }
 }
 
 impl Decodable for bitcoin::Amount {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -101,7 +104,7 @@ impl Decodable for bitcoin::Amount {
 }
 
 impl Encodable for bitcoin::Address {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         let mut len = 0;
         len += self.network.magic().consensus_encode(writer)?;
         len += self.script_pubkey().consensus_encode(writer)?;
@@ -110,7 +113,7 @@ impl Encodable for bitcoin::Address {
 }
 
 impl Decodable for bitcoin::Address {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         mut d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -118,19 +121,19 @@ impl Decodable for bitcoin::Address {
             .ok_or_else(|| DecodeError::from_str("Unknown network"))?;
         let script_pk = bitcoin::Script::consensus_decode(&mut d, modules)?;
 
-        bitcoin::Address::from_script(&script_pk, network)
-            .map_err(|e| DecodeError::new_custom(e.into()))
+        Ok(bitcoin::Address::from_script(&script_pk, network).unwrap())
+        // .map_err(|e| DecodeError::new_custom(e.into()))
     }
 }
 
 impl Encodable for bitcoin::hashes::sha256::Hash {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         self.into_inner().consensus_encode(writer)
     }
 }
 
 impl Decodable for bitcoin::hashes::sha256::Hash {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -142,10 +145,10 @@ impl Decodable for bitcoin::hashes::sha256::Hash {
 
 #[cfg(test)]
 mod tests {
-    use std::io::Cursor;
     use std::str::FromStr;
 
     use bitcoin::hashes::Hash as BitcoinHash;
+    use lightning::io::Cursor;
 
     use crate::encoding::{Decodable, Encodable};
     use crate::ModuleDecoderRegistry;

@@ -1,7 +1,6 @@
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, HashMap};
 use std::fmt::{self, Debug, Display, Formatter};
-use std::io::{Cursor, Read};
 use std::ops::Add;
 use std::pin::Pin;
 use std::str::FromStr;
@@ -34,6 +33,7 @@ use jsonrpsee_core::Error as JsonRpcError;
 use jsonrpsee_wasm_client::{Client as WsClient, WasmClientBuilder as WsClientBuilder};
 #[cfg(not(target_family = "wasm"))]
 use jsonrpsee_ws_client::{WsClient, WsClientBuilder};
+use lightning::io::{Cursor, Read};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use thiserror::Error;
@@ -666,17 +666,17 @@ impl FromStr for InviteCode {
         let bytes: Vec<u8> = Vec::<u8>::from_base32(&data)?;
         let mut cursor = Cursor::new(bytes);
         let mut id_bytes = [0; PK_SIZE];
-        cursor.read_exact(&mut id_bytes)?;
+        cursor.read_exact(&mut id_bytes).unwrap();
 
         let mut url_len = [0; 2];
-        cursor.read_exact(&mut url_len)?;
+        cursor.read_exact(&mut url_len).unwrap();
         let url_len = u16::from_be_bytes(url_len).into();
         let mut url_bytes = vec![0; url_len];
-        cursor.read_exact(&mut url_bytes)?;
+        cursor.read_exact(&mut url_bytes).unwrap();
         let mut download_token = [0; CONFIG_DOWNLOAD_TOKEN_BYTES];
-        cursor.read_exact(&mut download_token)?;
+        cursor.read_exact(&mut download_token).unwrap();
 
-        let url = std::str::from_utf8(&url_bytes)?;
+        let url = std::str::from_utf8(&url_bytes).unwrap();
 
         Ok(Self {
             url: url.parse()?,

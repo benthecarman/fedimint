@@ -12,7 +12,7 @@ use fedimint_core::task::TaskGroup;
 use fedimint_core::Amount;
 use ldk_node::io::SqliteStore;
 use ldk_node::{Builder, Event, LogLevel, NetAddress, Node};
-use lightning_invoice::Invoice;
+use lightning_invoice::Bolt11Invoice;
 use ln_gateway::gateway_lnrpc::{
     EmptyResponse, GetNodeInfoResponse, GetRouteHintsResponse, InterceptHtlcResponse,
     PayInvoiceRequest, PayInvoiceResponse,
@@ -491,7 +491,7 @@ impl LdkLightningTest {
                             .receive_payment(amount_msat, description.as_str(), expiry_secs)
                             .expect("LDK Node failed to create invoice");
                         let invoice =
-                            lightning_invoice::Invoice::from_str(ldk_invoice.to_string().as_str())
+                            lightning_invoice::Bolt11Invoice::from_str(ldk_invoice.to_string().as_str())
                                 .expect("Failed to create lightning_invoice");
                         response_sender
                             .send(LdkMessage::InvoiceResponse { invoice })
@@ -552,7 +552,7 @@ impl LdkLightningTest {
                         response_sender,
                     } => {
                         node.send_payment(
-                            &ldk_node::lightning_invoice::Invoice::from_str(invoice.as_str())
+                            &ldk_node::lightning_invoice::Bolt11Invoice::from_str(invoice.as_str())
                                 .expect("SendPayment could not parse invoice"),
                         )
                         .expect("Failed to send payment to invoice");

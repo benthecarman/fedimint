@@ -1,7 +1,7 @@
 use bitcoin::secp256k1::KeyPair;
 use fedimint_core::encoding::{Decodable, Encodable};
 use fedimint_core::Amount;
-use lightning_invoice::Invoice;
+use lightning_invoice::Bolt11Invoice;
 use serde::Serialize;
 
 use crate::modules::ln::contracts::incoming::IncomingContract;

@@ -1,10 +1,10 @@
 use std::borrow::Cow;
 use std::hash::Hash;
-use std::io::Cursor;
 
 use bitcoin::util::merkleblock::PartialMerkleTree;
 use bitcoin::{BlockHash, BlockHeader, Txid};
 use bitcoin_hashes::hex::{FromHex, ToHex};
+use lightning::io::Cursor;
 use serde::de::Error;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
@@ -37,7 +37,7 @@ impl TxOutProof {
 }
 
 impl Decodable for TxOutProof {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -64,7 +64,10 @@ impl Decodable for TxOutProof {
 }
 
 impl Encodable for TxOutProof {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut written = 0;
 
         written += self.block_header.consensus_encode(writer)?;

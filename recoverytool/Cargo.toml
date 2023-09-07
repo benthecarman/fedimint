@@ -12,7 +12,7 @@ path = "src/main.rs"
 
 [dependencies]
 anyhow = "1.0.69"
-bitcoin = "0.29.2"
+bitcoin = { version = "0.29.2", default-features = false, features = [ "rand", "serde" ] }
 clap = "4.1.6"
 fedimint-aead = { path = "../crypto/aead" }
 fedimint-core = { path = "../fedimint-core" }
@@ -23,7 +23,7 @@ fedimint-logging = { path = "../fedimint-logging" }
 fedimint-ln-server = { path = "../modules/fedimint-ln-server" }
 fedimint-mint-server = { path = "../modules/fedimint-mint-server" }
 futures = "0.3.26"
-miniscript = { version = "9.0.2" }
+miniscript = { version = "9.0.2", default-features = false, features = [ "compiler", "serde" ] }
 secp256k1 = { version = "0.24.3", features = [ "serde", "global-context" ] }
 serde = { version = "1.0.152", features = [ "derive" ] }
 serde_json = "1.0.93"

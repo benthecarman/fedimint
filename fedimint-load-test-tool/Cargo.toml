@@ -13,7 +13,7 @@ path = "src/main.rs"
 [dependencies]
 anyhow = "1"
 base64 = "0.20.0"
-bitcoin = "0.29.2"
+bitcoin = { version = "0.29.2", default-features = false, features = [ "rand", "serde" ] }
 clap = { version = "4", features = ["derive", "std", "help", "usage", "error-context", "suggestions", "env" ], default-features = false }
 devimint = { path = "../devimint" }
 fedimint-client = { path = "../fedimint-client" }
@@ -26,7 +26,7 @@ fedimint-wallet-client = { path = "../modules/fedimint-wallet-client" }
 futures = "0.3"
 jsonrpsee-core = { version = "0.18.0", features = [ "client" ] }
 jsonrpsee-types = { version = "0.18.0" }
-lightning-invoice = { version = "0.21.0", features = [ "serde" ] }
+lightning-invoice = { version = "0.21.0",default-features = false, features = [ "serde" ] }
 rand = "0.8"
 serde = { version = "1.0.149", features = [ "derive" ] }
 serde_json = "1.0.91"

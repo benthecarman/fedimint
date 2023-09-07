@@ -1,6 +1,5 @@
-use std::io::{Error, Write};
-
 use bitcoin_hashes::hex::ToHex;
+use lightning::io::{Error, Write};
 use tokio_rustls::rustls;
 
 use crate::encoding::Encodable;

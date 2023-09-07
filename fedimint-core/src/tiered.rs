@@ -120,7 +120,10 @@ impl<C> Encodable for Tiered<C>
 where
     C: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.0.consensus_encode(writer)
     }
 }
@@ -129,7 +132,7 @@ impl<C> Decodable for Tiered<C>
 where
     C: Decodable,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {

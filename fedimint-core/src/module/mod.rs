@@ -4,7 +4,6 @@ pub mod version;
 
 use std::collections::BTreeMap;
 use std::fmt::{Debug, Formatter};
-use std::io::Read;
 use std::marker::PhantomData;
 use std::pin::Pin;
 use std::sync::Arc;
@@ -12,6 +11,7 @@ use std::sync::Arc;
 use fedimint_logging::LOG_NET_API;
 use futures::Future;
 use jsonrpsee_core::JsonValue;
+use lightning::io::Read;
 use secp256k1_zkp::XOnlyPublicKey;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -913,7 +913,7 @@ impl<T: Encodable + Decodable> From<&T> for SerdeModuleEncoding<T> {
 
 impl<T: Encodable + Decodable + 'static> SerdeModuleEncoding<T> {
     pub fn try_into_inner(&self, modules: &ModuleDecoderRegistry) -> Result<T, DecodeError> {
-        let mut reader = std::io::Cursor::new(&self.0);
+        let mut reader = lightning::io::Cursor::new(&self.0);
         Decodable::consensus_decode(&mut reader, modules)
     }
 
@@ -926,7 +926,7 @@ impl<T: Encodable + Decodable + 'static> SerdeModuleEncoding<T> {
     /// themselves contain module dyn-types (e.g. a module output containing a
     /// fedimint transaction).
     pub fn try_into_inner_known_module_kind(&self, decoder: &Decoder) -> Result<T, DecodeError> {
-        let mut reader = std::io::Cursor::new(&self.0);
+        let mut reader = lightning::io::Cursor::new(&self.0);
         let module_instance =
             ModuleInstanceId::consensus_decode(&mut reader, &ModuleDecoderRegistry::default())?;
 

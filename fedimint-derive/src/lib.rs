@@ -113,7 +113,7 @@ pub fn derive_encodable(input: TokenStream) -> TokenStream {
                     .collect::<Vec<_>>();
                 quote! {
                     impl ::fedimint_core::encoding::Encodable for #ident {
-                        fn consensus_encode<W: std::io::Write>(&self, mut writer: &mut W) -> std::result::Result<usize, std::io::Error> {
+                        fn consensus_encode<W: lightning::io::Write>(&self, mut writer: &mut W) -> std::result::Result<usize, lightning::io::Error> {
                             let mut len = 0;
                             #(len += ::fedimint_core::encoding::Encodable::consensus_encode(&self.#field_names, writer)?;)*
                             Ok(len)
@@ -129,7 +129,7 @@ pub fn derive_encodable(input: TokenStream) -> TokenStream {
                     .collect::<Vec<_>>();
                 quote! {
                     impl ::fedimint_core::encoding::Encodable for #ident {
-                        fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> std::result::Result<usize, std::io::Error> {
+                        fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> std::result::Result<usize, lightning::io::Error> {
                             let mut len = 0;
                             #(len += ::fedimint_core::encoding::Encodable::consensus_encode(&self.#field_names, writer)?;)*
                             Ok(len)
@@ -142,7 +142,7 @@ pub fn derive_encodable(input: TokenStream) -> TokenStream {
             if variants.is_empty() {
                 quote! {
                     impl Encodable for #ident {
-                        fn consensus_encode<W: std::io::Write>(&self, _writer: &mut W) -> std::result::Result<usize, std::io::Error> {
+                        fn consensus_encode<W: lightning::io::Write>(&self, _writer: &mut W) -> std::result::Result<usize, lightning::io::Error> {
                             match *self {}
                         }
                     }
@@ -182,7 +182,7 @@ pub fn derive_encodable(input: TokenStream) -> TokenStream {
             });
                 quote! {
                     impl Encodable for #ident {
-                        fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> std::result::Result<usize, std::io::Error> {
+                        fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> std::result::Result<usize, lightning::io::Error> {
                             let mut len = 0;
                             match self {
                                 #(#match_arms)*
@@ -226,7 +226,7 @@ pub fn derive_decodable(input: TokenStream) -> TokenStream {
                     .collect::<Vec<_>>();
                 quote! {
                     impl ::fedimint_core::encoding::Decodable for #ident {
-                        fn consensus_decode<D: std::io::Read>(d: &mut D, modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
+                        fn consensus_decode<D: lightning::io::Read>(d: &mut D, modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
                         {
                             let mut len = 0;
                             #(let #field_names = ::fedimint_core::encoding::Decodable::consensus_decode(d, modules)?;)*
@@ -243,7 +243,7 @@ pub fn derive_decodable(input: TokenStream) -> TokenStream {
                     .collect::<Vec<_>>();
                 quote! {
                     impl ::fedimint_core::encoding::Decodable for #ident {
-                        fn consensus_decode<D: std::io::Read>(d: &mut D, modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
+                        fn consensus_decode<D: lightning::io::Read>(d: &mut D, modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
                         {
                             let mut len = 0;
                             #(let #field_names = ::fedimint_core::encoding::Decodable::consensus_decode(d, modules)?;)*
@@ -259,7 +259,7 @@ pub fn derive_decodable(input: TokenStream) -> TokenStream {
             if variants.is_empty() {
                 quote! {
                     impl ::fedimint_core::encoding::Decodable for #ident {
-                        fn consensus_decode<D: std::io::Read>(_d: &mut D, _modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
+                        fn consensus_decode<D: lightning::io::Read>(_d: &mut D, _modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
                         {
                             Err(::fedimint_core::encoding::DecodeError::new_custom(anyhow::anyhow!("Enum without variants can't be instantiated")))
                         }
@@ -303,7 +303,7 @@ pub fn derive_decodable(input: TokenStream) -> TokenStream {
 
                 quote! {
                     impl ::fedimint_core::encoding::Decodable for #ident {
-                        fn consensus_decode<D: std::io::Read>(d: &mut D, modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
+                        fn consensus_decode<D: lightning::io::Read>(d: &mut D, modules: &::fedimint_core::module::registry::ModuleDecoderRegistry) -> std::result::Result<Self, ::fedimint_core::encoding::DecodeError>
                         {
                             let variant = <u64 as ::fedimint_core::encoding::Decodable>::consensus_decode(d, modules)? as usize;
                             let decoded = match variant {

@@ -4,13 +4,13 @@ pub mod broadcaststream;
 use std::borrow::Cow;
 use std::fmt::{Debug, Display, Formatter};
 use std::future::Future;
-use std::io::Write;
 use std::path::Path;
 use std::pin::Pin;
 use std::{fs, io};
 
 use anyhow::format_err;
 use futures::StreamExt;
+use lightning::io::Write;
 use tokio::io::AsyncWriteExt;
 use tracing::debug;
 use url::Url;

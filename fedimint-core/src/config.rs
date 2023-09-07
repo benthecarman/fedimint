@@ -5,7 +5,7 @@ use std::ops::Mul;
 use std::path::Path;
 use std::str::FromStr;
 
-use anyhow::{bail, format_err, Context};
+use anyhow::{bail, format_err, Context, anyhow};
 use bitcoin::secp256k1;
 use bitcoin_hashes::hex::{format_hex, FromHex};
 use bitcoin_hashes::sha256::{Hash as Sha256, HashEngine};
@@ -215,9 +215,9 @@ impl FromStr for FederationId {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         Self::try_from_bytes(
-            Vec::from_hex(s)?
-                .try_into()
-                .map_err(|bytes: Vec<u8>| hex::Error::InvalidLength(48, bytes.len()))?,
+            Vec::from_hex(s).map_err(|_| anyhow::anyhow!("failed to decode"))
+                .and_then(|t| t.try_into().map_err(|_| anyhow!("failed")))
+                .map_err(|_| anyhow::anyhow!("failed to decode"))?
         )
         .ok_or_else::<anyhow::Error, _>(|| format_err!("Invalid FederationId pubkey"))
     }

@@ -1,5 +1,4 @@
-use std::io::{Error, Read, Write};
-
+use lightning::io::{Error, Read, Write};
 use threshold_crypto::group::Curve;
 use threshold_crypto::{G1Affine, G1Projective, G2Affine};
 
@@ -9,7 +8,7 @@ use crate::module::registry::ModuleDecoderRegistry;
 macro_rules! impl_external_encode_bls {
     ($ext:ident $(:: $ext_path:ident)*, $group:ty, $byte_len:expr) => {
         impl $crate::encoding::Encodable for $ext $(:: $ext_path)* {
-            fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+            fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, lightning::io::Error> {
                 let bytes = self.0.to_compressed();
                 writer.write_all(&bytes)?;
                 Ok(bytes.len())
@@ -17,12 +16,12 @@ macro_rules! impl_external_encode_bls {
         }
 
         impl $crate::encoding::Decodable for $ext $(:: $ext_path)* {
-            fn consensus_decode<D: std::io::Read>(
+            fn consensus_decode<D: lightning::io::Read>(
                 d: &mut D,
                 _modules: &$crate::module::registry::ModuleDecoderRegistry,
             ) -> Result<Self, crate::encoding::DecodeError> {
                 let mut bytes = [0u8; $byte_len];
-                d.read_exact(&mut bytes).map_err(crate::encoding::DecodeError::from_err)?;
+                d.read_exact(&mut bytes).unwrap();
                 let msg = <$group>::from_compressed(&bytes);
 
                 if msg.is_some().unwrap_u8() == 1 {
@@ -146,7 +145,10 @@ impl Decodable for tbs::PublicKeyShare {
 }
 
 impl Encodable for tbs::BlindingKey {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let bytes = self.0.to_bytes();
         writer.write_all(&bytes)?;
         Ok(bytes.len())
@@ -154,12 +156,12 @@ impl Encodable for tbs::BlindingKey {
 }
 
 impl Decodable for tbs::BlindingKey {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
         let mut bytes = [0u8; 32];
-        d.read_exact(&mut bytes).map_err(DecodeError::from_err)?;
+        d.read_exact(&mut bytes).unwrap();
         let key = tbs::Scalar::from_bytes(&bytes);
 
         if key.is_some().unwrap_u8() == 1 {

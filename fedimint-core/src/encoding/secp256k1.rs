@@ -1,12 +1,14 @@
-use std::io::{Error, Read, Write};
-
+use lightning::io::{Error, Read, Write};
 use secp256k1_zkp::ecdsa::Signature;
 
 use crate::encoding::{Decodable, DecodeError, Encodable};
 use crate::module::registry::ModuleDecoderRegistry;
 
 impl Encodable for secp256k1_zkp::ecdsa::Signature {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let bytes = self.serialize_compact();
         writer.write_all(&bytes)?;
         Ok(bytes.len())
@@ -14,7 +16,7 @@ impl Encodable for secp256k1_zkp::ecdsa::Signature {
 }
 
 impl Decodable for secp256k1_zkp::ecdsa::Signature {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -24,7 +26,10 @@ impl Decodable for secp256k1_zkp::ecdsa::Signature {
 }
 
 impl Encodable for secp256k1_zkp::XOnlyPublicKey {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let bytes = self.serialize();
         writer.write_all(&bytes[..])?;
         Ok(bytes.len())
@@ -32,7 +37,7 @@ impl Encodable for secp256k1_zkp::XOnlyPublicKey {
 }
 
 impl Decodable for secp256k1_zkp::XOnlyPublicKey {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -42,13 +47,16 @@ impl Decodable for secp256k1_zkp::XOnlyPublicKey {
 }
 
 impl Encodable for secp256k1_zkp::PublicKey {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.serialize().consensus_encode(writer)
     }
 }
 
 impl Decodable for secp256k1_zkp::PublicKey {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -58,13 +66,16 @@ impl Decodable for secp256k1_zkp::PublicKey {
 }
 
 impl Encodable for secp256k1_zkp::SecretKey {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.secret_bytes().consensus_encode(writer)
     }
 }
 
 impl Decodable for secp256k1_zkp::SecretKey {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -74,7 +85,10 @@ impl Decodable for secp256k1_zkp::SecretKey {
 }
 
 impl Encodable for secp256k1_zkp::schnorr::Signature {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let bytes = &self[..];
         assert_eq!(
             bytes.len(),
@@ -86,7 +100,7 @@ impl Encodable for secp256k1_zkp::schnorr::Signature {
 }
 
 impl Decodable for secp256k1_zkp::schnorr::Signature {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {

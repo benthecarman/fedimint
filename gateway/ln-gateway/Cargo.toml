@@ -39,7 +39,7 @@ async-trait = "0.1.64"
 axum = "0.6.4"
 axum-macros = "0.3.1"
 aquamarine = "0.3.0"
-bitcoin = { version = "0.29.2", features = ["serde"] }
+bitcoin = { version = "0.29.2", default-features = false, features = ["serde"] }
 bitcoin_hashes = "0.11.0"
 clap = { version = "4.1.6", features = ["derive", "std", "help", "usage", "error-context", "suggestions", "env"], default-features = false }
 cln-plugin = "0.1.5"
@@ -54,8 +54,8 @@ fedimint-mint-client = { path = "../../modules/fedimint-mint-client" }
 fedimint-dummy-client = { path = "../../modules/fedimint-dummy-client" }
 fedimint-wallet-client = { path = "../../modules/fedimint-wallet-client" }
 futures = "0.3.24"
-lightning = "0.0.113"
-lightning-invoice = "0.21.0"
+lightning = {version = "0.0.116", default-features = false }
+lightning-invoice  = {version = "0.24.0", default-features = false }
 prost = "0.11"
 rand = "0.8"
 reqwest = { version = "0.11.14", features = [ "json", "rustls-tls" ], default-features = false }

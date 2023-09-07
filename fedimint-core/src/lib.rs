@@ -2,7 +2,6 @@
 extern crate self as fedimint_core;
 
 use std::collections::{BTreeMap, BTreeSet};
-use std::io::Error;
 use std::num::ParseIntError;
 use std::str::FromStr;
 
@@ -11,6 +10,7 @@ use bitcoin_hashes::hash_newtype;
 use bitcoin_hashes::sha256::Hash as Sha256;
 pub use bitcoin_hashes::Hash as BitcoinHash;
 use fedimint_core::config::PeerUrl;
+use lightning::io::Error;
 pub use macro_rules_attribute::apply;
 pub use module::ServerModule;
 use serde::{Deserialize, Serialize};
@@ -163,7 +163,7 @@ pub struct OutPoint {
 pub enum ParseAmountError {
     #[error("Error parsing string as integer: {0}")]
     NotANumber(#[from] ParseIntError),
-    #[error("Error parsing string as a bitcoin amount: {0}")]
+    #[error("Error parsing string as a bitcoin amount")]
     WrongBitcoinAmount(#[from] bitcoin::util::amount::ParseAmountError),
 }
 
@@ -351,7 +351,7 @@ impl From<bitcoin::Amount> for Amount {
 }
 
 impl Encodable for TransactionId {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         let bytes = &self[..];
         writer.write_all(bytes)?;
         Ok(bytes.len())
@@ -359,7 +359,7 @@ impl Encodable for TransactionId {
 }
 
 impl Decodable for TransactionId {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {

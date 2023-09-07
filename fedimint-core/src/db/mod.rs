@@ -1327,7 +1327,7 @@ where
         }
 
         <Self as crate::encoding::Decodable>::consensus_decode(
-            &mut std::io::Cursor::new(&data[1..]),
+            &mut lightning::io::Cursor::new(&data[1..]),
             modules,
         )
         .map_err(|decode_error| DecodingError::Other(decode_error.0))
@@ -1339,7 +1339,7 @@ where
     T: Debug + Encodable + Decodable,
 {
     fn from_bytes(data: &[u8], modules: &ModuleDecoderRegistry) -> Result<Self, DecodingError> {
-        T::consensus_decode(&mut std::io::Cursor::new(data), modules)
+        T::consensus_decode(&mut lightning::io::Cursor::new(data), modules)
             .map_err(|e| DecodingError::Other(e.0))
     }
 

@@ -195,35 +195,41 @@ impl From<BTreeSet<PeerId>> for EpochVerifyError {
 }
 
 impl Encodable for SerdeSignature {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.0.to_bytes().consensus_encode(writer)
     }
 }
 
 impl Decodable for SerdeSignature {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
         let mut bytes = [0u8; 96];
-        d.read_exact(&mut bytes).map_err(DecodeError::from_err)?;
+        d.read_exact(&mut bytes).unwrap();
         Ok(SerdeSignature(Signature::from_bytes(bytes).unwrap()))
     }
 }
 
 impl Encodable for SerdeSignatureShare {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.0.to_bytes().consensus_encode(writer)
     }
 }
 
 impl Decodable for SerdeSignatureShare {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
         let mut bytes = [0u8; 96];
-        d.read_exact(&mut bytes).map_err(DecodeError::from_err)?;
+        d.read_exact(&mut bytes).unwrap();
         Ok(SerdeSignatureShare(
             SignatureShare::from_bytes(bytes).unwrap(),
         ))

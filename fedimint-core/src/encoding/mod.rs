@@ -13,13 +13,13 @@ mod tls;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt::{Debug, Formatter};
-use std::io::{self, Error, Read, Write};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{cmp, mem};
 
 use anyhow::format_err;
 use bitcoin_hashes::hex::{FromHex, ToHex};
 pub use fedimint_derive::{Decodable, Encodable, UnzipConsensus};
+use lightning::io::{self, Error, Read, Write};
 use lightning::util::ser::{Readable, Writeable};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -35,12 +35,15 @@ use crate::module::registry::ModuleDecoderRegistry;
 pub trait DynEncodable {
     fn consensus_encode_dyn(
         &self,
-        writer: &mut dyn std::io::Write,
-    ) -> Result<usize, std::io::Error>;
+        writer: &mut dyn lightning::io::Write,
+    ) -> Result<usize, lightning::io::Error>;
 }
 
 impl Encodable for dyn DynEncodable {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.consensus_encode_dyn(writer)
     }
 }
@@ -51,14 +54,17 @@ where
 {
     fn consensus_encode_dyn(
         &self,
-        mut writer: &mut dyn std::io::Write,
-    ) -> Result<usize, std::io::Error> {
+        mut writer: &mut dyn lightning::io::Write,
+    ) -> Result<usize, lightning::io::Error> {
         <Self as Encodable>::consensus_encode(self, &mut writer)
     }
 }
 
 impl Encodable for Box<dyn DynEncodable> {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         (**self).consensus_encode_dyn(writer)
     }
 }
@@ -69,16 +75,19 @@ pub trait Encodable {
     /// Returns the number of bytes written on success.
     ///
     /// The only errors returned are errors propagated from the writer.
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error>;
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error>;
 
     /// [`Self::consensus_encode`] to newly allocated `Vec<u8>`
-    fn consensus_encode_to_vec(&self) -> Result<Vec<u8>, std::io::Error> {
+    fn consensus_encode_to_vec(&self) -> Result<Vec<u8>, lightning::io::Error> {
         let mut bytes = vec![];
         self.consensus_encode(&mut bytes)?;
         Ok(bytes)
     }
 
-    fn consensus_encode_to_hex(&self) -> Result<String, std::io::Error> {
+    fn consensus_encode_to_hex(&self) -> Result<String, lightning::io::Error> {
         let mut bytes = vec![];
         self.consensus_encode(&mut bytes)?;
         Ok(bytes.to_hex())
@@ -92,7 +101,7 @@ pub trait Encodable {
     fn consensus_hash<H>(&self) -> H
     where
         H: bitcoin_hashes::Hash,
-        H::Engine: std::io::Write,
+        H::Engine: lightning::io::Write,
     {
         let mut engine = H::engine();
         self.consensus_encode(&mut engine)
@@ -104,7 +113,7 @@ pub trait Encodable {
 /// Data which can be encoded in a consensus-consistent way
 pub trait Decodable: Sized {
     /// Decode an object with a well-defined format
-    fn consensus_decode<R: std::io::Read>(
+    fn consensus_decode<R: lightning::io::Read>(
         r: &mut R,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError>;
@@ -114,22 +123,20 @@ pub trait Decodable: Sized {
         hex: &str,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
-        let bytes = Vec::<u8>::from_hex(hex)
-            .map_err(anyhow::Error::from)
-            .map_err(DecodeError::new_custom)?;
-        let mut reader = std::io::Cursor::new(bytes);
+        let bytes = Vec::<u8>::from_hex(hex).unwrap();
+        let mut reader = lightning::io::Cursor::new(bytes);
         Decodable::consensus_decode(&mut reader, modules)
     }
 }
 
 impl Encodable for Url {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         self.to_string().consensus_encode(writer)
     }
 }
 
 impl Decodable for Url {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -151,7 +158,10 @@ impl DecodeError {
 pub use lightning::util::ser::BigSize;
 
 impl Encodable for BigSize {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut writer = CountWrite::from(writer);
         self.write(&mut writer)?;
         Ok(usize::try_from(writer.count()).expect("can't overflow"))
@@ -159,7 +169,7 @@ impl Encodable for BigSize {
 }
 
 impl Decodable for BigSize {
-    fn consensus_decode<R: std::io::Read>(
+    fn consensus_decode<R: lightning::io::Read>(
         r: &mut R,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -171,7 +181,10 @@ impl Decodable for BigSize {
 macro_rules! impl_encode_decode_num_as_plain {
     ($num_type:ty) => {
         impl Encodable for $num_type {
-            fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+            fn consensus_encode<W: lightning::io::Write>(
+                &self,
+                writer: &mut W,
+            ) -> Result<usize, Error> {
                 let bytes = self.to_be_bytes();
                 writer.write_all(&bytes[..])?;
                 Ok(bytes.len())
@@ -179,12 +192,12 @@ macro_rules! impl_encode_decode_num_as_plain {
         }
 
         impl Decodable for $num_type {
-            fn consensus_decode<D: std::io::Read>(
+            fn consensus_decode<D: lightning::io::Read>(
                 d: &mut D,
                 _modules: &ModuleDecoderRegistry,
             ) -> Result<Self, crate::encoding::DecodeError> {
                 let mut bytes = [0u8; (<$num_type>::BITS / 8) as usize];
-                d.read_exact(&mut bytes).map_err(DecodeError::from_err)?;
+                d.read_exact(&mut bytes).unwrap();
                 Ok(<$num_type>::from_be_bytes(bytes))
             }
         }
@@ -194,13 +207,16 @@ macro_rules! impl_encode_decode_num_as_plain {
 macro_rules! impl_encode_decode_num_as_bigsize {
     ($num_type:ty) => {
         impl Encodable for $num_type {
-            fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+            fn consensus_encode<W: lightning::io::Write>(
+                &self,
+                writer: &mut W,
+            ) -> Result<usize, Error> {
                 BigSize(*self as u64).consensus_encode(writer)
             }
         }
 
         impl Decodable for $num_type {
-            fn consensus_decode<D: std::io::Read>(
+            fn consensus_decode<D: lightning::io::Read>(
                 d: &mut D,
                 _modules: &ModuleDecoderRegistry,
             ) -> Result<Self, crate::encoding::DecodeError> {
@@ -221,7 +237,7 @@ macro_rules! impl_encode_decode_tuple {
     ($($x:ident),*) => (
         #[allow(non_snake_case)]
         impl <$($x: Encodable),*> Encodable for ($($x),*) {
-            fn consensus_encode<W: std::io::Write>(&self, s: &mut W) -> Result<usize, std::io::Error> {
+            fn consensus_encode<W: lightning::io::Write>(&self, s: &mut W) -> Result<usize, lightning::io::Error> {
                 let &($(ref $x),*) = self;
                 let mut len = 0;
                 $(len += $x.consensus_encode(s)?;)*
@@ -231,7 +247,7 @@ macro_rules! impl_encode_decode_tuple {
 
         #[allow(non_snake_case)]
         impl<$($x: Decodable),*> Decodable for ($($x),*) {
-            fn consensus_decode<D: std::io::Read>(d: &mut D, modules: &ModuleDecoderRegistry) -> Result<Self, DecodeError> {
+            fn consensus_decode<D: lightning::io::Read>(d: &mut D, modules: &ModuleDecoderRegistry) -> Result<Self, DecodeError> {
                 Ok(($({let $x = Decodable::consensus_decode(d, modules)?; $x }),*))
             }
         }
@@ -246,7 +262,7 @@ impl<T> Encodable for &[T]
 where
     T: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         let mut len = 0;
         len += (self.len() as u64).consensus_encode(writer)?;
         for item in self.iter() {
@@ -260,7 +276,7 @@ impl<T> Encodable for Vec<T>
 where
     T: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         (self as &[T]).consensus_encode(writer)
     }
 }
@@ -269,7 +285,7 @@ impl<T> Decodable for Vec<T>
 where
     T: Decodable,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -317,7 +333,10 @@ impl<T, const SIZE: usize> Encodable for [T; SIZE]
 where
     T: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut len = 0;
         for item in self.iter() {
             len += item.consensus_encode(writer)?;
@@ -330,7 +349,7 @@ impl<T, const SIZE: usize> Decodable for [T; SIZE]
 where
     T: Decodable + Debug + Default + Copy,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -347,7 +366,10 @@ impl<T> Encodable for Option<T>
 where
     T: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut len = 0;
         if let Some(inner) = self {
             len += 1u8.consensus_encode(writer)?;
@@ -363,7 +385,7 @@ impl<T> Decodable for Option<T>
 where
     T: Decodable,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -382,7 +404,7 @@ impl<T> Encodable for Box<T>
 where
     T: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         self.as_ref().consensus_encode(writer)
     }
 }
@@ -391,7 +413,7 @@ impl<T> Decodable for Box<T>
 where
     T: Decodable,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -400,16 +422,16 @@ where
 }
 
 impl Encodable for () {
-    fn consensus_encode<W: std::io::Write>(
+    fn consensus_encode<W: lightning::io::Write>(
         &self,
         _writer: &mut W,
-    ) -> Result<usize, std::io::Error> {
+    ) -> Result<usize, lightning::io::Error> {
         Ok(0)
     }
 }
 
 impl Decodable for () {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         _d: &mut D,
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -418,19 +440,19 @@ impl Decodable for () {
 }
 
 impl Encodable for &str {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         self.as_bytes().consensus_encode(writer)
     }
 }
 
 impl Encodable for String {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         self.as_bytes().consensus_encode(writer)
     }
 }
 
 impl Decodable for String {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -439,14 +461,17 @@ impl Decodable for String {
 }
 
 impl Encodable for SystemTime {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let duration = self.duration_since(UNIX_EPOCH).expect("valid duration");
         duration.consensus_encode_dyn(writer)
     }
 }
 
 impl Decodable for SystemTime {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -456,7 +481,10 @@ impl Decodable for SystemTime {
 }
 
 impl Encodable for Duration {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut count = 0;
         count += self.as_secs().consensus_encode(writer)?;
         count += self.subsec_nanos().consensus_encode(writer)?;
@@ -466,7 +494,7 @@ impl Encodable for Duration {
 }
 
 impl Decodable for Duration {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -476,14 +504,14 @@ impl Decodable for Duration {
     }
 }
 
-impl Encodable for lightning_invoice::Invoice {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+impl Encodable for lightning_invoice::Bolt11Invoice {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         self.to_string().consensus_encode(writer)
     }
 }
 
 impl Encodable for lightning::routing::gossip::RoutingFees {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
+    fn consensus_encode<W: lightning::io::Write>(&self, writer: &mut W) -> Result<usize, Error> {
         let mut len = 0;
         len += self.base_msat.consensus_encode(writer)?;
         len += self.proportional_millionths.consensus_encode(writer)?;
@@ -492,7 +520,7 @@ impl Encodable for lightning::routing::gossip::RoutingFees {
 }
 
 impl Decodable for lightning::routing::gossip::RoutingFees {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -505,14 +533,14 @@ impl Decodable for lightning::routing::gossip::RoutingFees {
     }
 }
 
-impl Decodable for lightning_invoice::Invoice {
-    fn consensus_decode<D: std::io::Read>(
+impl Decodable for lightning_invoice::Bolt11Invoice {
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
-        String::consensus_decode(d, modules)?
-            .parse::<lightning_invoice::Invoice>()
-            .map_err(DecodeError::from_err)
+        Ok(String::consensus_decode(d, modules)?
+            .parse::<lightning_invoice::Bolt11Invoice>()
+            .unwrap())
     }
 }
 
@@ -530,8 +558,7 @@ impl Decodable for bool {
         _modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
         let mut bool_as_u8 = [0u8];
-        d.read_exact(&mut bool_as_u8)
-            .map_err(DecodeError::from_err)?;
+        d.read_exact(&mut bool_as_u8).unwrap();
         match bool_as_u8[0] {
             0 => Ok(false),
             1 => Ok(true),
@@ -574,7 +601,10 @@ where
     K: Encodable,
     V: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut len = 0;
         len += (self.len() as u64).consensus_encode(writer)?;
         for (k, v) in self.iter() {
@@ -590,7 +620,7 @@ where
     K: Decodable + Ord,
     V: Decodable,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -611,7 +641,10 @@ impl<K> Encodable for BTreeSet<K>
 where
     K: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         let mut len = 0;
         len += (self.len() as u64).consensus_encode(writer)?;
         for k in self.iter() {
@@ -625,7 +658,7 @@ impl<K> Decodable for BTreeSet<K>
 where
     K: Decodable + Ord,
 {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -642,13 +675,16 @@ where
 }
 
 impl Encodable for Cow<'static, str> {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         self.as_ref().consensus_encode(writer)
     }
 }
 
 impl Decodable for Cow<'static, str> {
-    fn consensus_decode<D: std::io::Read>(
+    fn consensus_decode<D: lightning::io::Read>(
         d: &mut D,
         modules: &ModuleDecoderRegistry,
     ) -> Result<Self, DecodeError> {
@@ -784,7 +820,7 @@ impl<T> Decodable for DynRawFallback<T>
 where
     T: Decodable + 'static,
 {
-    fn consensus_decode<R: std::io::Read>(
+    fn consensus_decode<R: lightning::io::Read>(
         reader: &mut R,
         decoders: &ModuleDecoderRegistry,
     ) -> Result<Self, crate::encoding::DecodeError> {
@@ -819,7 +855,10 @@ impl<T> Encodable for DynRawFallback<T>
 where
     T: Encodable,
 {
-    fn consensus_encode<W: std::io::Write>(&self, writer: &mut W) -> Result<usize, std::io::Error> {
+    fn consensus_encode<W: lightning::io::Write>(
+        &self,
+        writer: &mut W,
+    ) -> Result<usize, lightning::io::Error> {
         match self {
             DynRawFallback::Raw {
                 module_instance_id,
@@ -837,9 +876,9 @@ where
 #[cfg(test)]
 mod tests {
     use std::fmt::Debug;
-    use std::io::Cursor;
 
     use bitcoin_hashes::hex::FromHex;
+    use lightning::io::Cursor;
 
     use super::*;
     use crate::db::DatabaseValue;
@@ -940,7 +979,9 @@ mod tests {
 			p62g49p7569ev48cmulecsxe59lvaw3wlxm7r982zxa9zzj7z5l0cqqxusqqyqqqqlgqqqqqzsqygarl9fh3\
 			8s0gyuxjjgux34w75dnc6xp2l35j7es3jd4ugt3lu0xzre26yg5m7ke54n2d5sym4xcmxtl8238xxvw5h5h5\
 			j5r6drg6k6zcqj0fcwg";
-        let invoice = invoice_str.parse::<lightning_invoice::Invoice>().unwrap();
+        let invoice = invoice_str
+            .parse::<lightning_invoice::Bolt11Invoice>()
+            .unwrap();
         test_roundtrip(invoice);
     }
 
